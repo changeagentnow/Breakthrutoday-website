@@ -198,6 +198,26 @@
   .final p{color:rgba(255,255,255,.78);max-width:46ch;margin:0 auto 34px;font-size:1.15rem}
   .final .kicker{color:var(--signal)}
 
+  /* contact form */
+  .contact-form{max-width:520px;margin:0 auto;text-align:left;display:grid;gap:16px}
+  .contact-form label{display:block;font-family:"Archivo";font-size:12.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:8px}
+  .contact-form input,.contact-form textarea{
+    width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.18);border-radius:4px;
+    padding:14px 16px;font-family:"Newsreader",Georgia,serif;font-size:16px;color:#fff;
+    transition:border-color .2s ease,background .2s ease;
+  }
+  .contact-form input::placeholder,.contact-form textarea::placeholder{color:rgba(255,255,255,.38)}
+  .contact-form input:focus,.contact-form textarea:focus{outline:none;border-color:var(--signal);background:rgba(255,255,255,.1)}
+  .contact-form textarea{resize:vertical;min-height:120px}
+  .contact-form .form-row{display:flex;gap:16px;flex-wrap:wrap}
+  .contact-form .form-row>div{flex:1 1 200px}
+  .contact-form button[type="submit"]{width:100%;font-family:"Archivo"}
+  .contact-form button[type="submit"]:disabled{opacity:.6;cursor:not-allowed;transform:none}
+  .form-status{font-family:"Archivo";font-size:14px;font-weight:600;margin-top:2px;min-height:20px}
+  .form-status[data-state="success"]{color:#7fd894}
+  .form-status[data-state="error"]{color:#ff9b8a}
+  .form-honeypot{position:absolute;left:-9999px;top:-9999px;opacity:0;height:0;width:0}
+
   /* footer */
   footer{background:var(--ink-2);color:rgba(231,237,244,.66);padding:48px 0;font-family:"Archivo";font-size:14px}
   .foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px}
@@ -409,7 +429,26 @@
     <span class="kicker reveal">Let's find the first win</span>
     <h2 class="reveal">Book a 30-minute operational review</h2>
     <p class="reveal">We'll talk through your biggest operational headache and spot at least one concrete improvement opportunity on the call. No slides, no obligation.</p>
-    <a href="mailto:hello@rrp.com" class="btn btn-primary reveal">Schedule your review</a>
+
+    <form id="contact-form" class="contact-form reveal" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+      <div class="form-row">
+        <div>
+          <label for="cf-name">Name</label>
+          <input type="text" id="cf-name" name="name" placeholder="Jane Doe" required>
+        </div>
+        <div>
+          <label for="cf-email">Email</label>
+          <input type="email" id="cf-email" name="email" placeholder="jane@company.com" required>
+        </div>
+      </div>
+      <div>
+        <label for="cf-message">What's the operational headache?</label>
+        <textarea id="cf-message" name="message" placeholder="Tell us a bit about what you're running into..." required></textarea>
+      </div>
+      <input type="text" name="_gotcha" class="form-honeypot" tabindex="-1" autocomplete="off">
+      <button type="submit" class="btn btn-primary">Send message</button>
+      <p class="form-status" id="cf-status" role="status" aria-live="polite"></p>
+    </form>
   </div>
 </section>
 
@@ -450,6 +489,41 @@
       if(!open){item.classList.add('open');a.style.maxHeight=a.scrollHeight+'px';}
     });
   });
+
+  // contact form -> Formspree
+  const contactForm=document.getElementById('contact-form');
+  if(contactForm){
+    const status=document.getElementById('cf-status');
+    const submitBtn=contactForm.querySelector('button[type="submit"]');
+    contactForm.addEventListener('submit',async(e)=>{
+      e.preventDefault();
+      submitBtn.disabled=true;
+      status.dataset.state='';
+      status.textContent='Sending...';
+      try{
+        const res=await fetch(contactForm.action,{
+          method:'POST',
+          body:new FormData(contactForm),
+          headers:{'Accept':'application/json'}
+        });
+        if(res.ok){
+          status.dataset.state='success';
+          status.textContent="Thanks — we'll be in touch shortly.";
+          contactForm.reset();
+        }else{
+          const data=await res.json().catch(()=>null);
+          const msg=data && data.errors ? data.errors.map(er=>er.message).join(', ') : 'Something went wrong. Please try again or email us directly.';
+          status.dataset.state='error';
+          status.textContent=msg;
+        }
+      }catch(err){
+        status.dataset.state='error';
+        status.textContent='Something went wrong. Please try again or email us directly.';
+      }finally{
+        submitBtn.disabled=false;
+      }
+    });
+  }
 </script>
 </body>
 </html>
